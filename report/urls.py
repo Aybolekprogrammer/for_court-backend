@@ -24,7 +24,9 @@ urlpatterns = [
     re_path(r'^api/allrecipients/filter/$', FilteringRecipient.as_view(), name='filtering-all-recipients'),
     re_path(r'^api/allmustpays/filter/$', FilteringMustPay.as_view(), name='filtering-all-mustpays'),
     path('api/addalimony', add_alimony, name='adding-alimony'),
-
+    path('api/addreceipt', add_receipt),
+    path('api/addchild', add_recipient_child),
+    path('api/addalimonytomustpay', add_alimony_to_mustpay),
     path('api/mustpayreceipts/undefined', pass_undefined),
     path('api/mustpayconfigbyid/undefined', pass_undefined),
     path('api/getrecipientchildren/undefined', pass_undefined),

@@ -270,3 +270,78 @@ def add_alimony(request):
 def pass_undefined(request):
     if request.method == 'GET':
         return Response({'reload'})
+    
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
+@throttle_classes([IpThrottle])
+def add_receipt(request):
+    if request.method == 'POST':
+        data = {
+            'must_pay': MustPay.objects.get(id=request.POST['receipt[id]']),
+            'payment': request.POST['receipt[payment]'],
+            'payment_date': request.POST['receipt[payment_date]'],
+            'currency': request.POST['receipt[currency]'],
+            'alimony_percent': request.POST['receipt[alimony_percent]'],            
+            'document_scan': request.FILES['receipt[document_scan]']
+        }
+        receipt_serializer = MustPayReceiptSerializer(data=data)
+        if receipt_serializer.is_valid():
+            receipt_serializer.save()
+            return Response({'SUCCESS': 'Added sucessfully!'}, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
+@throttle_classes([IpThrottle])
+def add_recipient_child(request):
+    if request.method == 'POST':
+        data = {
+            'recipient': Recipient.objects.get(id=request.POST['child[id]']),
+            'name_and_lastname': request.POST['child[name_and_lastname]'],
+            'birthday': request.POST['child[birthday]'],
+            'document_scan': request.FILES['child[document_scan]']
+        }
+        child_serializer = RecipientChildSerializer(data=data)
+        if child_serializer.is_valid():
+            child_serializer.save(child_adder=request.user)
+            return Response({'SUCCESS': 'Added sucessfully!'}, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
+@throttle_classes([IpThrottle])
+def add_alimony_to_mustpay(request):
+    if request.method == 'POST':
+        recipient = {
+            'name_and_lastname': request.POST['recipient[name_and_lastname]'],
+            'birthday': request.POST['recipient[birthday]'],
+            'phone_number': request.POST['recipient[phone_number]'],
+            'address': request.POST['recipient[address]'],
+            'document_scan': request.FILES['recipient[document_scan]']
+        }
+        alimony = {
+            'Category': request.POST['alimony[Category]'],
+            'ruling': request.POST['alimony[ruling]'],
+            'ruling_date': request.POST['alimony[ruling_date]'],
+            'began_paying': request.POST['alimony[began_paying]'],
+            'ruling_scan': request.FILES['alimony[ruling_scan]'],
+            'executor': request.POST['alimony[executor]'],
+            'executor_register': request.POST['alimony[executor_register]'],
+            'executor_date': request.POST['alimony[executor_date]'],
+            'note': request.POST['alimony[note]'],
+            'must_pay': MustPay.objects.get(id=request.POST['mustpay[id]'])
+        }
+        recipient_serializer = RecipientSerializer(data=recipient)
+        alimony_serializer = AlimonySerializer(data=alimony)
+        if recipient_serializer.is_valid() and alimony_serializer.is_valid():
+            addedRecipient = recipient_serializer.save(recipient_adder=request.user)
+            alimony_serializer.save(user=request.user, recipient=addedRecipient)
+            return Response({'submitted.'},status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
